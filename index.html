@@ -139,6 +139,8 @@
   }
   .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:13px;}
   .del:hover{color:var(--danger);}
+  .del:disabled{opacity:.3;cursor:default;}
+  .del:disabled:hover{color:var(--ink-soft);}
 
   .wishlist-toggle{display:flex;gap:8px;margin-bottom:18px;}
   .wishlist-toggle button{
@@ -320,6 +322,7 @@
   let expenses = [];
   let wishlist = [];
   let currentWishType = '家具';
+  let editingCatId = null;
 
   const byId = id => document.getElementById(id);
   const fmt = n => 'NT$ ' + Math.round(n).toLocaleString('en-US');
@@ -340,7 +343,7 @@
   }
 
   // DB row -> 前端物件
-  const mapCat = r => ({id:r.id, name:r.name, planned:Number(r.planned_amount), createdBy:r.created_by});
+  const mapCat = r => ({id:r.id, name:r.name, planned:Number(r.planned_amount), sortOrder:r.sort_order || 0, createdBy:r.created_by});
   const mapExp = r => ({id:r.id, categoryId:r.category_id || '', item:r.item, amount:Number(r.amount),
     date:r.spent_date, payer:r.payer || '', store:r.store || '', createdBy:r.created_by});
   const mapWish = r => ({id:r.id, type:r.type, name:r.name, room:r.room || '',
@@ -349,7 +352,7 @@
 
   async function loadAll(){
     const [c, e, w] = await Promise.all([
-      db.from('reno_budget_categories').select('*').order('created_at'),
+      db.from('reno_budget_categories').select('*').order('sort_order').order('created_at'),
       db.from('reno_expenses').select('*').order('created_at'),
       db.from('reno_wishlist_items').select('*').order('created_at')
     ]);
@@ -379,7 +382,7 @@
     const planned = parseFloat(byId('catPlanned').value);
     if(!name || !planned || planned<=0){ return; }
     const { data, error } = await db.from('reno_budget_categories')
-      .insert({ name, planned_amount: planned, created_by: byId('catBy').value })
+      .insert({ name, planned_amount: planned, sort_order: categories.length + 1, created_by: byId('catBy').value })
       .select().single();
     if(error){ return fail('新增空間', error); }
     categories.push(mapCat(data));
@@ -396,20 +399,72 @@
     renderAll();
   }
 
+  async function moveCategory(id, dir){
+    const i = categories.findIndex(c=>c.id===id);
+    const j = i + dir;
+    if(i<0 || j<0 || j>=categories.length) return;
+    [categories[i], categories[j]] = [categories[j], categories[i]];
+    const changed = [];
+    categories.forEach((c,idx)=>{ if(c.sortOrder !== idx+1){ c.sortOrder = idx+1; changed.push(c); } });
+    renderAll();
+    const results = await Promise.all(changed.map(c =>
+      db.from('reno_budget_categories').update({ sort_order: c.sortOrder }).eq('id', c.id)));
+    const failed = results.find(r=>r.error);
+    if(failed){ fail('調整順序', failed.error); loadAll(); }
+  }
+
+  function startEditCategory(id){ editingCatId = id; renderCategories(); }
+  function cancelEditCategory(){ editingCatId = null; renderCategories(); }
+
+  async function saveCategory(id){
+    const c = categories.find(c=>c.id===id);
+    if(!c) return;
+    const name = byId('editCatName').value.trim();
+    const planned = parseFloat(byId('editCatPlanned').value);
+    if(!name || !planned || planned<=0) return;
+    const oldName = c.name;
+    const { error } = await db.from('reno_budget_categories')
+      .update({ name, planned_amount: planned }).eq('id', id);
+    if(error){ return fail('儲存空間', error); }
+    if(name !== oldName){
+      // 願望清單用空間名稱對應，改名時一併同步
+      const r = await db.from('reno_wishlist_items').update({ room: name }).eq('room', oldName);
+      if(r.error){ fail('同步願望清單的空間名稱', r.error); }
+      else wishlist.forEach(w=>{ if(w.room===oldName) w.room = name; });
+    }
+    c.name = name; c.planned = planned;
+    editingCatId = null;
+    renderAll();
+  }
+
   function renderCategories(){
     const list = byId('categoryList');
     if(categories.length===0){
       list.innerHTML = '<div class="empty">還沒有新增任何空間，先在上面加入第一個空間吧</div>';
       return;
     }
-    list.innerHTML = categories.map(c=>{
+    list.innerHTML = categories.map((c, idx)=>{
       const spent = expenses.filter(e=>e.categoryId===c.id).reduce((s,e)=>s+e.amount,0);
       const pct = Math.min(100, (spent/c.planned)*100);
       const over = spent > c.planned;
+      if(c.id === editingCatId){
+        return `<div class="room-card">
+          <div class="add-row" style="margin:0;border:none;padding:0;">
+            <div class="field"><label for="editCatName">空間名稱</label><input id="editCatName" value="${esc(c.name)}"></div>
+            <div class="field"><label for="editCatPlanned">預算金額</label><input id="editCatPlanned" type="number" value="${c.planned}"></div>
+            <button class="btn" onclick="saveCategory('${c.id}')">儲存</button>
+            <button class="btn btn-ghost" onclick="cancelEditCategory()">取消</button>
+          </div>
+        </div>`;
+      }
       return `<div class="room-card">
         <div class="room-top">
           <span class="room-name">${esc(c.name)}</span>
-          <span class="room-figures"><b>${fmt(spent)}</b> / ${fmt(c.planned)} · <button class="del" onclick="deleteCategory('${c.id}')">刪除</button></span>
+          <span class="room-figures"><b>${fmt(spent)}</b> / ${fmt(c.planned)}
+            · <button class="del" title="上移" ${idx===0?'disabled':''} onclick="moveCategory('${c.id}', -1)">↑</button>
+            <button class="del" title="下移" ${idx===categories.length-1?'disabled':''} onclick="moveCategory('${c.id}', 1)">↓</button>
+            · <button class="del" onclick="startEditCategory('${c.id}')">編輯</button>
+            · <button class="del" onclick="deleteCategory('${c.id}')">刪除</button></span>
         </div>
         <div class="bar-track"><div class="bar-fill ${over?'over':''}" style="width:${pct}%"></div></div>
       </div>`;
@@ -598,7 +653,7 @@
 
   // 回到分頁時重新讀取，看到對方剛記的內容
   document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState === 'visible') loadAll();
+    if(document.visibilityState === 'visible' && !editingCatId) loadAll();
   });
 
   renderAll();

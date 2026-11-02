@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>裝修紀事</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EAE6DD;
+    --paper:#F6F3EC;
+    --ink:#2B2A28;
+    --ink-soft:#6B665C;
+    --line:#C7C0B2;
+    --line-strong:#A9A190;
+    --wood:#B07C4A;
+    --blue:#46586A;
+    --sage:#77855E;
+    --danger:#A5533F;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:28px 28px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:40px 24px 80px;}
+
+  header{margin-bottom:36px;}
+  .brand{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:34px;
+    letter-spacing:0.2px;
+    margin:0 0 6px;
+  }
+  .brand-sub{color:var(--ink-soft);font-size:14px;margin:0;}
+
+  /* overview dimension bar */
+  .overview{
+    background:var(--paper);
+    border:1px solid var(--line-strong);
+    padding:22px 24px 26px;
+    margin-bottom:28px;
+    position:relative;
+  }
+  .corner{position:absolute;width:10px;height:10px;}
+  .corner::before,.corner::after{content:'';position:absolute;background:var(--ink);}
+  .corner.tl{top:-1px;left:-1px;}
+  .corner.tr{top:-1px;right:-1px;}
+  .corner.bl{bottom:-1px;left:-1px;}
+  .corner.br{bottom:-1px;right:-1px;}
+  .corner.tl::before,.corner.bl::before{width:1.5px;height:10px;left:0;}
+  .corner.tl::after,.corner.tr::after{width:10px;height:1.5px;top:0;}
+  .corner.tr::before,.corner.br::before{width:1.5px;height:10px;right:0;}
+  .corner.bl::after,.corner.br::after{width:10px;height:1.5px;bottom:0;}
+
+  .overview-nums{display:flex;gap:40px;align-items:baseline;flex-wrap:wrap;margin-bottom:16px;}
+  .num-block .label{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .num-block .num{font-family:'IBM Plex Mono',monospace;font-size:26px;}
+  .num-block.spent .num{color:var(--wood);}
+
+  .dim-line{position:relative;height:20px;margin-top:4px;}
+  .dim-track{position:absolute;top:9px;left:0;right:0;height:1px;background:var(--line-strong);}
+  .dim-fill{position:absolute;top:8px;left:0;height:3px;background:var(--wood);transition:width .4s ease;}
+  .dim-tick{position:absolute;top:4px;width:1px;height:11px;background:var(--line-strong);}
+  .dim-tick.end{background:var(--ink);}
+
+  /* nav */
+  nav{display:flex;gap:28px;border-bottom:1px solid var(--line-strong);margin-bottom:28px;}
+  nav button{
+    background:none;border:none;cursor:pointer;
+    font-family:'Work Sans',sans-serif;font-size:15px;color:var(--ink-soft);
+    padding:10px 2px 12px;position:relative;
+  }
+  nav button.active{color:var(--ink);}
+  nav button.active::after{
+    content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--blue);
+  }
+
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  .room-card{
+    background:var(--paper);border:1px solid var(--line-strong);
+    padding:16px 18px;margin-bottom:14px;position:relative;
+  }
+  .room-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
+  .room-name{font-family:'Fraunces',serif;font-size:19px;}
+  .room-figures{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);}
+  .room-figures b{color:var(--ink);font-weight:500;}
+  .bar-track{height:6px;background:var(--bg);border:1px solid var(--line);}
+  .bar-fill{height:100%;background:var(--sage);}
+  .bar-fill.over{background:var(--danger);}
+
+  .add-row{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;
+    background:var(--paper);border:1px dashed var(--line-strong);
+    padding:16px 18px;margin-bottom:20px;
+  }
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:11px;color:var(--ink-soft);}
+  .field input, .field select{
+    font-family:'Work Sans',sans-serif;font-size:14px;
+    border:1px solid var(--line-strong);background:#fff;
+    padding:7px 8px;min-width:110px;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--blue);outline-offset:1px;}
+  .btn{
+    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:500;
+    background:var(--ink);color:var(--paper);border:none;
+    padding:9px 18px;cursor:pointer;
+  }
+  .btn:hover{background:var(--blue);}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-strong);}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--ink);}
+
+  table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  thead th{
+    text-align:left;font-size:12px;color:var(--ink-soft);font-weight:500;
+    border-bottom:1px solid var(--line-strong);padding:6px 8px;
+  }
+  tbody td{padding:9px 8px;border-bottom:1px solid var(--line);font-size:14px;}
+  tbody tr:hover{background:rgba(70,88,106,0.05);}
+  td.amount{font-family:'IBM Plex Mono',monospace;}
+  .tag{
+    font-size:11px;padding:2px 7px;border:1px solid var(--line-strong);color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:13px;}
+  .del:hover{color:var(--danger);}
+
+  .wishlist-toggle{display:flex;gap:8px;margin-bottom:18px;}
+  .wishlist-toggle button{
+    font-family:'Work Sans',sans-serif;font-size:13px;padding:7px 14px;
+    background:var(--paper);border:1px solid var(--line-strong);color:var(--ink-soft);cursor:pointer;
+  }
+  .wishlist-toggle button.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+  .item-card{background:var(--paper);border:1px solid var(--line-strong);padding:14px;}
+  .item-card .thumb{
+    width:100%;height:110px;background:var(--bg);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;
+    margin-bottom:10px;overflow:hidden;
+  }
+  .item-card .thumb img{width:100%;height:100%;object-fit:cover;}
+  .item-name{font-family:'Fraunces',serif;font-size:16px;margin-bottom:4px;}
+  .item-meta{font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
+  .item-price{font-family:'IBM Plex Mono',monospace;font-size:14px;margin-bottom:8px;}
+  .status-row{display:flex;justify-content:space-between;align-items:center;}
+  .status-select{font-size:12px;border:1px solid var(--line-strong);padding:4px 6px;background:#fff;}
+
+  .room-group{margin-bottom:26px;}
+  .room-group-title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:19px;margin:0 0 12px;
+    padding-bottom:6px;border-bottom:1px solid var(--line-strong);
+  }
+  .room-group-title span{font-family:'Work Sans',sans-serif;font-size:12px;color:var(--ink-soft);margin-left:8px;}
+
+  .empty{color:var(--ink-soft);font-size:14px;padding:20px 0;text-align:center;}
+
+  @media (max-width:520px){
+    .wrap{padding:28px 16px 60px;}
+    .overview-nums{gap:24px;}
+    .add-row{flex-direction:column;align-items:stretch;}
+    .field input, .field select{min-width:0;width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="banner" style="display:none;margin-bottom:18px;padding:10px 14px;border:1px solid var(--danger);color:var(--danger);background:var(--paper);font-size:14px;"></div>
+
+  <header>
+    <p class="brand">裝修紀事</p>
+    <p class="brand-sub">預算、記帳與願望清單 — 兩人共用的裝修備忘</p>
+  </header>
+
+  <div class="overview">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="overview-nums">
+      <div class="num-block">
+        <div class="label">總預算</div>
+        <div class="num" id="totalPlanned">NT$ 0</div>
+      </div>
+      <div class="num-block spent">
+        <div class="label">已花費</div>
+        <div class="num" id="totalSpent">NT$ 0</div>
+      </div>
+      <div class="num-block">
+        <div class="label">剩餘</div>
+        <div class="num" id="totalRemain">NT$ 0</div>
+      </div>
+    </div>
+    <div class="dim-line">
+      <div class="dim-track"></div>
+      <div class="dim-fill" id="dimFill"></div>
+      <div class="dim-tick" style="left:0"></div>
+      <div class="dim-tick end" style="right:0"></div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="tab-btn active" data-tab="budget">預算</button>
+    <button class="tab-btn" data-tab="expense">記帳</button>
+    <button class="tab-btn" data-tab="wishlist">願望清單</button>
+  </nav>
+
+  <!-- 預算 -->
+  <section class="panel active" id="panel-budget">
+    <div class="add-row">
+      <div class="field">
+        <label for="catName">空間名稱</label>
+        <input id="catName" placeholder="例如：廚房">
+      </div>
+      <div class="field">
+        <label for="catPlanned">預算金額</label>
+        <input id="catPlanned" type="number" placeholder="0">
+      </div>
+      <div class="field">
+        <label for="catBy">新增人</label>
+        <select id="catBy"><option value="nini">Nini</option><option value="boyfriend">男友</option></select>
+      </div>
+      <button class="btn" onclick="addCategory()">新增空間</button>
+    </div>
+    <div id="categoryList"></div>
+  </section>
+
+  <!-- 記帳 -->
+  <section class="panel" id="panel-expense">
+    <div class="add-row">
+      <div class="field">
+        <label for="expCat">空間</label>
+        <select id="expCat"></select>
+      </div>
+      <div class="field">
+        <label for="expItem">品項</label>
+        <input id="expItem" placeholder="例如：水龍頭">
+      </div>
+      <div class="field">
+        <label for="expAmount">金額</label>
+        <input id="expAmount" type="number" placeholder="0">
+      </div>
+      <div class="field">
+        <label for="expPayer">付款人（選填）</label>
+        <select id="expPayer"><option value="">未填</option><option value="nini">Nini</option><option value="boyfriend">男友</option></select>
+      </div>
+      <div class="field">
+        <label for="expStore">店家/平台</label>
+        <input id="expStore" placeholder="選填">
+      </div>
+      <button class="btn" onclick="addExpense()">新增紀錄</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>日期</th><th>空間</th><th>品項</th><th>金額</th><th>付款人</th><th>店家</th><th></th></tr>
+      </thead>
+      <tbody id="expenseRows"></tbody>
+    </table>
+    <div class="empty" id="expenseEmpty" style="display:none;">目前還沒有記帳紀錄</div>
+  </section>
+
+  <!-- 願望清單 -->
+  <section class="panel" id="panel-wishlist">
+    <div class="wishlist-toggle">
+      <button class="wtype active" data-type="家具" onclick="setWishType('家具')">家具</button>
+      <button class="wtype" data-type="家電" onclick="setWishType('家電')">家電</button>
+    </div>
+    <div class="add-row">
+      <div class="field">
+        <label for="wName">名稱</label>
+        <input id="wName" placeholder="例如：餐桌">
+      </div>
+      <div class="field">
+        <label for="wRoom">適用空間</label>
+        <select id="wRoom"></select>
+      </div>
+      <div class="field">
+        <label for="wPrice">預估價格</label>
+        <input id="wPrice" type="number" placeholder="0">
+      </div>
+      <div class="field">
+        <label for="wLink">連結</label>
+        <input id="wLink" placeholder="選填">
+      </div>
+      <div class="field">
+        <label for="wBy">提議人</label>
+        <select id="wBy"><option value="nini">Nini</option><option value="boyfriend">男友</option></select>
+      </div>
+      <button class="btn" onclick="addWishItem()">加入清單</button>
+    </div>
+    <div id="wishGrid"></div>
+    <div class="empty" id="wishEmpty" style="display:none;"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+
+  // ---- Supabase ----
+  const SUPABASE_URL = 'https://fufelzgicsacolkopuvp.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_zYfBJnCVqq1yYj-owA7lvg_QVKJe5fu';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let categories = [];
+  let expenses = [];
+  let wishlist = [];
+  let currentWishType = '家具';
+
+  const byId = id => document.getElementById(id);
+  const fmt = n => 'NT$ ' + Math.round(n).toLocaleString('en-US');
+  const whoLabel = w => w === 'boyfriend' ? '男友' : (w === 'nini' ? 'Nini' : '—');
+  const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const safeUrl = u => /^https?:\/\//i.test(u) ? u : '';
+  const today = () => new Date().toLocaleDateString('sv-SE');
+
+  function showError(msg){
+    const b = byId('banner');
+    b.textContent = msg;
+    b.style.display = 'block';
+  }
+  function clearError(){ byId('banner').style.display = 'none'; }
+  function fail(action, error){
+    console.error(action, error);
+    showError(action + '失敗：' + (error && error.message ? error.message : '未知錯誤'));
+  }
+
+  // DB row -> 前端物件
+  const mapCat = r => ({id:r.id, name:r.name, planned:Number(r.planned_amount), createdBy:r.created_by});
+  const mapExp = r => ({id:r.id, categoryId:r.category_id || '', item:r.item, amount:Number(r.amount),
+    date:r.spent_date, payer:r.payer || '', store:r.store || '', createdBy:r.created_by});
+  const mapWish = r => ({id:r.id, type:r.type, name:r.name, room:r.room || '',
+    price:r.estimated_price == null ? null : Number(r.estimated_price),
+    link:r.link || '', status:r.status, proposedBy:r.proposed_by || '', linkedExpenseId:r.linked_expense_id});
+
+  async function loadAll(){
+    const [c, e, w] = await Promise.all([
+      db.from('reno_budget_categories').select('*').order('created_at'),
+      db.from('reno_expenses').select('*').order('created_at'),
+      db.from('reno_wishlist_items').select('*').order('created_at')
+    ]);
+    const err = c.error || e.error || w.error;
+    if(err){ fail('讀取資料', err); return false; }
+    categories = c.data.map(mapCat);
+    expenses = e.data.map(mapExp);
+    wishlist = w.data.map(mapWish);
+    clearError();
+    renderAll();
+    return true;
+  }
+
+  // ---- nav ----
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      byId('panel-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- categories (budget) ----
+  async function addCategory(){
+    const name = byId('catName').value.trim();
+    const planned = parseFloat(byId('catPlanned').value);
+    if(!name || !planned || planned<=0){ return; }
+    const { data, error } = await db.from('reno_budget_categories')
+      .insert({ name, planned_amount: planned, created_by: byId('catBy').value })
+      .select().single();
+    if(error){ return fail('新增空間', error); }
+    categories.push(mapCat(data));
+    byId('catName').value=''; byId('catPlanned').value='';
+    renderAll();
+  }
+
+  async function deleteCategory(id){
+    if(!confirm('刪除這個空間？底下的記帳紀錄會保留，但會變成未分類。')) return;
+    const { error } = await db.from('reno_budget_categories').delete().eq('id', id);
+    if(error){ return fail('刪除空間', error); }
+    categories = categories.filter(c=>c.id!==id);
+    expenses.forEach(e=>{ if(e.categoryId===id) e.categoryId=''; });
+    renderAll();
+  }
+
+  function renderCategories(){
+    const list = byId('categoryList');
+    if(categories.length===0){
+      list.innerHTML = '<div class="empty">還沒有新增任何空間，先在上面加入第一個空間吧</div>';
+      return;
+    }
+    list.innerHTML = categories.map(c=>{
+      const spent = expenses.filter(e=>e.categoryId===c.id).reduce((s,e)=>s+e.amount,0);
+      const pct = Math.min(100, (spent/c.planned)*100);
+      const over = spent > c.planned;
+      return `<div class="room-card">
+        <div class="room-top">
+          <span class="room-name">${esc(c.name)}</span>
+          <span class="room-figures"><b>${fmt(spent)}</b> / ${fmt(c.planned)} · <button class="del" onclick="deleteCategory('${c.id}')">刪除</button></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill ${over?'over':''}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderCategoryOptions(){
+    const sel = byId('expCat');
+    const prevCat = sel.value;
+    sel.innerHTML = categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('') || '<option value="">請先新增空間</option>';
+    if(categories.some(c=>c.id===prevCat)) sel.value = prevCat;
+    const wr = byId('wRoom');
+    const prev = wr.value;
+    wr.innerHTML = '<option value="">未指定空間</option>' + categories.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    wr.value = categories.some(c=>c.name===prev) ? prev : '';
+  }
+
+  // ---- expenses ----
+  async function addExpense(){
+    const categoryId = byId('expCat').value;
+    const item = byId('expItem').value.trim();
+    const amount = parseFloat(byId('expAmount').value);
+    if(!categoryId || !item || !amount || amount<=0) return;
+    const payer = byId('expPayer').value || null;
+    const { data, error } = await db.from('reno_expenses').insert({
+      category_id: categoryId, item, amount,
+      spent_date: today(),
+      payer, store: byId('expStore').value.trim() || null,
+      created_by: payer
+    }).select().single();
+    if(error){ return fail('新增記帳', error); }
+    expenses.push(mapExp(data));
+    byId('expItem').value=''; byId('expAmount').value=''; byId('expStore').value='';
+    renderAll();
+  }
+
+  async function deleteExpense(id){
+    const { error } = await db.from('reno_expenses').delete().eq('id', id);
+    if(error){ return fail('刪除記帳', error); }
+    expenses = expenses.filter(e=>e.id!==id);
+    wishlist.forEach(w=>{ if(w.linkedExpenseId===id) w.linkedExpenseId=null; });
+    renderAll();
+  }
+
+  function renderExpenses(){
+    const rows = byId('expenseRows');
+    byId('expenseEmpty').style.display = expenses.length===0 ? 'block' : 'none';
+    rows.innerHTML = expenses.slice().reverse().map(e=>{
+      const cat = categories.find(c=>c.id===e.categoryId);
+      return `<tr>
+        <td>${esc(e.date)}</td>
+        <td>${cat ? esc(cat.name) : '—'}</td>
+        <td>${esc(e.item)}</td>
+        <td class="amount">${fmt(e.amount)}</td>
+        <td><span class="tag">${whoLabel(e.payer)}</span></td>
+        <td>${esc(e.store) || '—'}</td>
+        <td><button class="del" onclick="deleteExpense('${e.id}')">刪除</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ---- wishlist ----
+  function setWishType(type){
+    currentWishType = type;
+    document.querySelectorAll('.wtype').forEach(b=>b.classList.toggle('active', b.dataset.type===type));
+    renderWishlist();
+  }
+
+  async function addWishItem(){
+    const name = byId('wName').value.trim();
+    if(!name) return;
+    const { data, error } = await db.from('reno_wishlist_items').insert({
+      type: currentWishType,
+      name,
+      room: byId('wRoom').value || null,
+      estimated_price: parseFloat(byId('wPrice').value) || null,
+      link: byId('wLink').value.trim() || null,
+      status: '想要',
+      proposed_by: byId('wBy').value
+    }).select().single();
+    if(error){ return fail('加入清單', error); }
+    wishlist.push(mapWish(data));
+    byId('wName').value=''; byId('wRoom').value=''; byId('wPrice').value=''; byId('wLink').value='';
+    renderWishlist();
+  }
+
+  async function deleteWishItem(id){
+    const { error } = await db.from('reno_wishlist_items').delete().eq('id', id);
+    if(error){ return fail('刪除項目', error); }
+    wishlist = wishlist.filter(w=>w.id!==id);
+    renderWishlist();
+  }
+
+  async function updateWishStatus(id, status){
+    const w = wishlist.find(w=>w.id===id);
+    if(!w) return;
+    const enteringBudget = status === '列入預算' && w.status !== '列入預算' && !w.linkedExpenseId;
+    const patch = { status };
+    let newExpense = null;
+
+    if(enteringBudget){
+      const matchedCat = categories.find(c=>c.name===w.room);
+      const { data, error } = await db.from('reno_expenses').insert({
+        category_id: matchedCat ? matchedCat.id : null,
+        item: w.name,
+        amount: w.price || 0,
+        spent_date: today(),
+        payer: w.proposedBy || null,
+        created_by: w.proposedBy || null,
+        note: '由願望清單自動列入'
+      }).select().single();
+      if(error){ fail('自動記帳', error); renderAll(); return; }
+      newExpense = mapExp(data);
+      patch.linked_expense_id = newExpense.id;
+      expenses.push(newExpense);
+    }
+
+    const { error } = await db.from('reno_wishlist_items').update(patch).eq('id', id);
+    if(error){ fail('更新狀態', error); renderAll(); return; }
+    w.status = status;
+    if(newExpense) w.linkedExpenseId = newExpense.id;
+    renderAll();
+
+    if(newExpense){
+      if(!newExpense.categoryId) alert(`已記帳，但空間「${w.room||'（未指定）'}」沒有對應的預算類別，這筆記帳暫時沒有歸類到任何空間。`);
+      if(!w.price) alert('這個項目還沒填預估價格，記帳金額先記為 0，之後可以到「記帳」分頁刪除重記。');
+    }
+  }
+
+  function renderWishlist(){
+    const items = wishlist.filter(w=>w.type===currentWishType);
+    const grid = byId('wishGrid');
+    const empty = byId('wishEmpty');
+    if(items.length===0){
+      grid.innerHTML='';
+      empty.style.display='block';
+      empty.textContent = `還沒有${currentWishType}項目，加入第一個想要的${currentWishType}吧`;
+      return;
+    }
+    empty.style.display='none';
+    const card = w=>`
+      <div class="item-card">
+        <div class="thumb">${safeUrl(w.link) ? `<a href="${esc(safeUrl(w.link))}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">查看連結 ↗</a>` : '尚無圖片/連結'}</div>
+        <div class="item-name">${esc(w.name)}</div>
+        <div class="item-meta">提議人：${whoLabel(w.proposedBy)}</div>
+        <div class="item-price">${w.price ? fmt(w.price) : '未填價格'}</div>
+        <div class="status-row">
+          <select class="status-select" onchange="updateWishStatus('${w.id}', this.value)">
+            ${['想要','列入預算','已下單','已到貨'].map(s=>`<option value="${s}" ${w.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <button class="del" onclick="deleteWishItem('${w.id}')">刪除</button>
+        </div>
+      </div>
+    `;
+    const order = categories.map(c=>c.name);
+    items.forEach(w=>{ const r = w.room || ''; if(r && !order.includes(r)) order.push(r); });
+    order.push('');
+    grid.innerHTML = order.map(r=>{
+      const group = items.filter(w=>(w.room||'')===r);
+      if(group.length===0) return '';
+      return `<div class="room-group">
+        <h3 class="room-group-title">${esc(r) || '未指定空間'} <span>${group.length} 項</span></h3>
+        <div class="grid">${group.map(card).join('')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- overview ----
+  function renderOverview(){
+    const totalPlanned = categories.reduce((s,c)=>s+c.planned,0);
+    const totalSpent = expenses.reduce((s,e)=>s+e.amount,0);
+    byId('totalPlanned').textContent = fmt(totalPlanned);
+    byId('totalSpent').textContent = fmt(totalSpent);
+    byId('totalRemain').textContent = fmt(Math.max(0,totalPlanned-totalSpent));
+    const pct = totalPlanned>0 ? Math.min(100, (totalSpent/totalPlanned)*100) : 0;
+    byId('dimFill').style.width = pct + '%';
+  }
+
+  function renderAll(){
+    renderCategoryOptions();
+    renderCategories();
+    renderExpenses();
+    renderWishlist();
+    renderOverview();
+  }
+
+  // 回到分頁時重新讀取，看到對方剛記的內容
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') loadAll();
+  });
+
+  renderAll();
+  loadAll();
+</script>
+</body>
+</html>
